@@ -26,15 +26,17 @@ from seal import ChooserEvaluator,     \
                  ChooserPoly
 
 parms = EncryptionParameters()
-parms.set_poly_modulus("1x^4096 + 1")
-parms.set_coeff_modulus(seal.coeff_modulus_128(4096))
-parms.set_plain_modulus(1 << 10)
+parms.set_poly_modulus("1x^16384 + 1")
+parms.set_coeff_modulus(seal.coeff_modulus_128(16384))
+parms.set_plain_modulus(1 << 16)
 context = SEALContext(parms)
 
 encoder = IntegerEncoder(context.plain_modulus())
 keygen = KeyGenerator(context)
 public_key = keygen.public_key()
 secret_key = keygen.secret_key()
+ev_keys20 = EvaluationKeys()
+keygen.generate_evaluation_keys(20,ev_keys20)
 encryptor = Encryptor(context, public_key)
 evaluator = Evaluator(context)
 decryptor = Decryptor(context, secret_key)
@@ -67,6 +69,9 @@ def dot_vector(r,d,i,j):
 	for b in range(l):
 		# multiply/binary operation between vectors
 		cVec=Ciphertext()
+		if (count>2):
+			evaluator.relinearize(r[b], ev_keys20)
+			evaluator.relinearize(d[b], ev_keys20)
 		evaluator.multiply( r[b], d[b], cVec)
 		evaluator.add(X[i][j], cVec)
 	print("Noise budget "+str(i)+" "+str(j)+" "+ str(decryptor.invariant_noise_budget(X[i][j])))
@@ -92,13 +97,15 @@ def print_plain(D):
 			decryptor.decrypt(y, p)
 			print(encoder.decode_int32(p))
 
+
 matrixPower_vector=[A]
 trace_vector=[trace(A)]
+count=1
 for i in range(1,n-1):
 	matrixPower_vector.append(raise_power(matrixPower_vector[i-1]))
 	trace_vector.append(trace(matrixPower_vector[i]))
+	count+=1
 
-for y in (trace_vector):
-	p=Plaintext()
-	decryptor.decrypt(y, p)
-	print(encoder.decode_int32(p))
+for y in (matrixPower_vector):
+	print_plain(y)
+
