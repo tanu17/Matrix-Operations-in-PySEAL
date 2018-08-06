@@ -58,7 +58,6 @@ for i in range(n):
 	A.append(a)
 	X.append(x)
 
-print("0 encoding: ", encoder.encode(0).to_string())
 #tA_=numpy.transpose(A)
 tA=[list(tup) for tup in zip(*A)]
 
@@ -83,7 +82,7 @@ def trace(M):
 	e=Ciphertext()
 	encryptor.encrypt(encoder.encode(0), e)
 	for i in range(0,n):
-		evaluator.add(M[i][i],e)
+		evaluator.add(e,M[i][i])
 	return (e)
 
 def print_plain(D):
@@ -92,7 +91,6 @@ def print_plain(D):
 			p=Plaintext()
 			decryptor.decrypt(y, p)
 			print(encoder.decode_int32(p))
-
 
 matrixPower_vector=[A]
 trace_vector=[trace(A)]
