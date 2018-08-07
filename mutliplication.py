@@ -44,23 +44,17 @@ evaluator = Evaluator(context)
 decryptor = Decryptor(context, secret_key)
 
 A=[]
-X=[]
 n=int(input("Enter dimension: "))
 
 for i in range(n):
 	a=[]
-	x=[]
 	for j in range(n):
 		encrypted_data1= Ciphertext()
-		encrypted_data2= Ciphertext()
 		ran=random.randint(0,10)
 		print(ran)
 		encryptor.encrypt(encoder.encode(ran), encrypted_data1)
-		encryptor.encrypt(encoder.encode(0), encrypted_data2)
 		a.append(encrypted_data1)
-		x.append(encrypted_data2)
 	A.append(a)
-	X.append(x)
 
 #tA_=numpy.transpose(A)
 tA=[list(tup) for tup in zip(*A)]
@@ -98,20 +92,20 @@ def trace(M):
 	return (e)
 
 def print_plain(D):
-	for x in D:
-		for y in x:
+	for h in D:
+		for g in h:
 			p=Plaintext()
-			decryptor.decrypt(y, p)
+			decryptor.decrypt(g, p)
 			print(encoder.decode_int32(p))
 
 
 matrixPower_vector=[A]
 trace_vector=[trace(A)]
-count=0
+#count=0
 for i in range(1,n-1):
 	matrixPower_vector.append(raise_power(matrixPower_vector[i-1]))
-	#trace_vector.append(trace(matrixPower_vector[i]))
-	count+=1
+	trace_vector.append(trace(matrixPower_vector[i]))
+	#count+=1
 
 for y in (matrixPower_vector):
 	print_plain(y)
