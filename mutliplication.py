@@ -26,17 +26,19 @@ from seal import ChooserEvaluator,     \
                  ChooserPoly
 
 parms = EncryptionParameters()
-parms.set_poly_modulus("1x^16384 + 1")
-parms.set_coeff_modulus(seal.coeff_modulus_128(16384))
-parms.set_plain_modulus(1 << 16)
+parms.set_poly_modulus("1x^8192 + 1")
+parms.set_coeff_modulus(seal.coeff_modulus_128(8192))
+parms.set_plain_modulus(1 << 21)
 context = SEALContext(parms)
 
 encoder = IntegerEncoder(context.plain_modulus())
 keygen = KeyGenerator(context)
 public_key = keygen.public_key()
 secret_key = keygen.secret_key()
+ev_keys40 = EvaluationKeys()
 ev_keys20 = EvaluationKeys()
-keygen.generate_evaluation_keys(20,ev_keys20)
+#keygen.generate_evaluation_keys(40,5,ev_keys40)
+keygen.generate_evaluation_keys(20,3,ev_keys20)
 encryptor = Encryptor(context, public_key)
 evaluator = Evaluator(context)
 decryptor = Decryptor(context, secret_key)
@@ -63,24 +65,29 @@ for i in range(n):
 #tA_=numpy.transpose(A)
 tA=[list(tup) for tup in zip(*A)]
 
-def dot_vector(r,d,i,j):
-	print("+"*30+"\n")
+def dot_vector(r,d,i,j, empty_ctext):
 	l=len(r)
 	for b in range(l):
 		# multiply/binary operation between vectors
 		cVec=Ciphertext()
-		if (count>2):
-			evaluator.relinearize(r[b], ev_keys20)
-			evaluator.relinearize(d[b], ev_keys20)
-		evaluator.multiply( r[b], d[b], cVec)
-		evaluator.add(X[i][j], cVec)
-	print("Noise budget "+str(i)+" "+str(j)+" "+ str(decryptor.invariant_noise_budget(X[i][j])))
+		evaluator.multiply(r[b], d[b], cVec)
+		evaluator.add(empty_ctext, cVec)
+		#if (count==2):
+		#	evaluator.relinearize(empty_ctext, ev_keys20)
+	print("Noise budget "+str(i)+" "+str(j)+" "+ str(decryptor.invariant_noise_budget(empty_ctext)))
 
 
 def raise_power(M):
+	print("+"*30+"\n")
+	X=[]
 	for i in range(n):
+		x=[]
 		for j in range(n):
-			dot_vector(M[i], tA[j], i, j)
+			encrypted_data2= Ciphertext()
+			encryptor.encrypt(encoder.encode(0), encrypted_data2)
+			dot_vector(M[i], tA[j], i,j,encrypted_data2)
+			x.append(encrypted_data2)
+		X.append(x)
 	return(X)
 
 def trace(M):
@@ -100,12 +107,11 @@ def print_plain(D):
 
 matrixPower_vector=[A]
 trace_vector=[trace(A)]
-count=1
+count=0
 for i in range(1,n-1):
 	matrixPower_vector.append(raise_power(matrixPower_vector[i-1]))
-	trace_vector.append(trace(matrixPower_vector[i]))
+	#trace_vector.append(trace(matrixPower_vector[i]))
 	count+=1
 
 for y in (matrixPower_vector):
 	print_plain(y)
-
