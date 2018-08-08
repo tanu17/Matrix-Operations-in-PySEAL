@@ -32,14 +32,14 @@ parms.set_plain_modulus(1 << 21)
 context = SEALContext(parms)
 
 #encoder = IntegerEncoder(context.plain_modulus())
-encoderF = FractionalEncoder(context.plain_modulus(), context.poly_modulus(), 30, 32, 3) 
+encoderF = FractionalEncoder(context.plain_modulus(), context.poly_modulus(), 30, 34, 3) 
 keygen = KeyGenerator(context)
 public_key = keygen.public_key()
 secret_key = keygen.secret_key()
 ev_keys40 = EvaluationKeys()
 ev_keys20 = EvaluationKeys()
 #keygen.generate_evaluation_keys(40,5,ev_keys40)
-keygen.generate_evaluation_keys(20,3,ev_keys20)
+#keygen.generate_evaluation_keys(20,3,ev_keys20)
 encryptor = Encryptor(context, public_key)
 evaluator = Evaluator(context)
 decryptor = Decryptor(context, secret_key)
@@ -107,7 +107,7 @@ def print_plain(D):
 def print_value(s):
 	p=Plaintext()
 	decryptor.decrypt(s,p)
-	return(encoderF.decode(p))
+	print(encoderF.decode(p))
 
 def mult(s, L):
 	for x in L:
@@ -146,35 +146,54 @@ for y in (trace_vector):
 	print(encoderF.decode(p))
 """
 
-c=[trace_vector[0]]
+c=[Ciphertext(trace_vector[0])]
+evaluator.negate(c[0])
 
 for i in range(1,n):
-	c_new=Ciphertext(trace_vector[i-1])
+	c_new=Ciphertext(trace_vector[i])
 	for j in range(i):
 		tc=Ciphertext()
-		print("t= ", print_value(trace_vector[n-2-j]))
-		print("c= ,",print_value(c[j]))
-		evaluator.multiply(trace_vector[n-2-j],c[j],tc)
+		evaluator.multiply(trace_vector[i-1-j],c[j],tc)
 		evaluator.add(c_new,tc)
 	evaluator.negate(c_new)
 	frac=encoderF.encode(1/(i+1))
 	evaluator.multiply_plain(c_new,frac)
 	c.append(c_new)
-	print_value(c_new)
+	
+
+for i in range(n):
+	print("t"+str(i))
+	print_value(trace_vector[i])
+	print_value(c[i])
 
 matrixPower_vector=[iden_matrix(n)]+matrixPower_vector
 c0=Ciphertext()
 encryptor.encrypt(encoderF.encode(1),c0)
 c=[c0]+c
 
-for i in range(len(matrixPower_vector)):
+for i in range(len(matrixPower_vector)-1):
 	for j in range(len(c)):
-		if (i+j == n-2):
+		if (i+j == n-1):
 			mult(c[j],matrixPower_vector[i])
+			#print_plain(matrixPower_vector[i])
+			#print("c[j]= "),
+			#print_value(c[j])
 			for t in range(n):
 				for s in range(n):
 					evaluator.add(A_inv[t][s],matrixPower_vector[i][t][s])
 
-print_plain(A_inv)
+A_i_dec=[]
+for x in A_inv:
+	a_i=[]
+	for y in x:
+		p=Plaintext()
+		decryptor.decrypt(y, p)
+		a_i.append(encoderF.decode(p))
+	A_i_dec.append(a_i)
 
-			
+p_deter=Plaintext()
+decryptor.decrypt(c[n], p)
+determin=encoderF.decode(p)
+print(A_i_dec)
+A_i_dec=[[(-1/determin)*elem for elem in row] for row in A_i_dec]
+print(A_i_dec)
