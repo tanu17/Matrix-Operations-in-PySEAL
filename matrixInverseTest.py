@@ -192,4 +192,4 @@ determin=encoderF.decode(p)
 
 print("negative of co-factor matrix: ",A_i_dec)
 A_i_dec=[[(-1/determin)*elem for elem in row] for row in A_i_dec]
-print("The inverse matrix:\n"A_i_dec)
+print("The inverse matrix:\n",A_i_dec)
