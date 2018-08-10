@@ -65,7 +65,7 @@ def trace(M):
 	return (t)
 
 def dot_vector(row,col,empty_ctext):
-	l=len(r)
+	l=len(row)
 	for i in range(l):
 		# multiply/binary operation between vectors
 		# can define new dit-vector operation here
@@ -192,4 +192,4 @@ determin=encoderF.decode(p)
 
 print("negative of co-factor matrix: ",A_i_dec)
 A_i_dec=[[(-1/determin)*elem for elem in row] for row in A_i_dec]
-print("The inverse matrix:\n",A_i_dec)
+print("\nThe inverse matrix:\n",A_i_dec)
