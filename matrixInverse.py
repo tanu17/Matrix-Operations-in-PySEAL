@@ -1,4 +1,5 @@
-#import numpy 
+import numpy as np
+import time
 import random
 import time
 import random
@@ -111,25 +112,28 @@ def iden_matrix(n):
 		X.append(x)
 	return(X)
 
-
+plain_A = []
 A=[]
 A_inv=[]
 n=int(input("Enter dimension: "))
 
 for i in range(n):
+	plain_a = []
 	a=[]
 	a_i=[]
 	for j in range(n):
 		encrypted_data1= Ciphertext()
 		enc_dat=Ciphertext()
 		ran=random.randint(0,10)
-		print(ran)
+		plain_a.append(ran)
 		encryptor.encrypt(encoderF.encode(ran), encrypted_data1)
 		encryptor.encrypt(encoderF.encode(0), enc_dat)
 		a.append(encrypted_data1)
 		a_i.append(enc_dat)
 	A.append(a)
 	A_inv.append(a_i)
+	plain_A.append(plain_a)
+	print(plain_a)
 
 #tA_=numpy.transpose(A)
 tA=[list(tup) for tup in zip(*A)]
@@ -138,6 +142,8 @@ tA=[list(tup) for tup in zip(*A)]
 matrixPower_vector=[A]
 trace_vector=[trace(A)]
 #count=0
+
+t1 = time.time()
 
 # creates vector matrixPower_vector contaning each element as powers of matrix A upto A^n
 # Also creates a vector trace_vector which contains trace of matrix A, A^2 ... A^(n-1)
@@ -185,11 +191,16 @@ for x in A_inv:
 		a_i.append(encoderF.decode(p))
 	A_i_dec.append(a_i)
 
-p_deter=Plaintext()
 decryptor.decrypt(c[n], p)
 # nth coefficient of characteristic equation of th
 determin=encoderF.decode(p)
 
-print("negative of co-factor matrix: ",A_i_dec)
+print("negative of co-factor matrix: ", A_i_dec)
 A_i_dec=[[(-1/determin)*elem for elem in row] for row in A_i_dec]
-print("\nThe inverse matrix:\n",A_i_dec)
+print("\nThe inverse matrix:\n", np.asarray(A_i_dec))
+print('Time cost: {} seconds'.format(time.time()-t1))
+
+t2 = time.time()
+np_A_inv = np.linalg.inv(np.asarray(plain_A))
+print('Inverse computed by numpy: \n{}'.format(np_A_inv))
+print('Time cost: {} second'.format(time.time()-t2))
