@@ -133,8 +133,8 @@ secret_key = keygen.secret_key()
 encryptor = Encryptor(context, public_key)
 evaluator = Evaluator(context)
 decryptor = Decryptor(context, secret_key)
-
-snp = open("C:/Users/User/Desktop/GWAS analysis/analysis1/vcf/snpMat.txt","r+")
+dir_path=os.path.dirname(os.path.realpath(__file__))
+snp = open(dir_path+"/"+"snpMat.txt","r+")
 S=[]
 for row in snp.readlines():
 	S.append(row.strip().split())
@@ -148,7 +148,7 @@ for index in range(len(S)):
 	encryptor.encrypt(encoderF.encode(S[index]), enc_dat, S[index])
 print(S)
 
-covariate= open("C:/Users/User/Desktop/GWAS analysis/analysis1/covariates.csv")
+covariate= open(dir_path+"/"+"covariates.csv")
 cov=[]
 for row in covariate.readlines():
 	cov.append(row.strip().split(","))
