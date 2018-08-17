@@ -60,16 +60,17 @@ def dot_vector(row,col,empty_ctext):
 		#	evaluator.relinearize(empty_ctext, ev_keys20)
 
 def raise_power(M):
-	print("+"*30+"\n")
+	return(matMultiply(M,M))
+
+def matMultiply(T,K):
 	X=[]
-	for i in range(n):
-		# x is rows in matrix X
+	tK=[list(tup) for tup in zip(*K)]
+	for i in range(len(T)):
 		x=[]
-		for j in range(n):
-			temp= Ciphertext()
+		for j in range(len(K)):
+			temp=Ciphertext()
 			encryptor.encrypt(encoderF.encode(0), temp)
-			dot_vector(M[i], tA[j],temp)
-			print("Noise budget of ["+str(i)+"] ["+str(j)+"] :"+ str(decryptor.invariant_noise_budget(temp)))
+			dot_vector(T[i], tK[j], temp)
 			x.append(temp)
 		X.append(x)
 	return(X)
@@ -118,6 +119,57 @@ def normalize(M):
 			row[i]= (row[i] - minR) / avg
 	return(M)
 
+def inverseMatrix(K):
+	n=len(K)
+	matrixPower_vector=[K]
+	trace_vector=[trace(K)]
+
+	for i in range(1,n):
+		matrixPower_vector.append(raise_power(matrixPower_vector[i-1]))
+		trace_vector.append(trace(matrixPower_vector[i]))
+
+	c=[Ciphertext(trace_vector[0])]
+	evaluator.negate(c[0])
+
+	for i in range(1,n):
+		c_new=Ciphertext(trace_vector[i])
+		for j in range(i):
+			tc=Ciphertext()
+			evaluator.multiply(trace_vector[i-1-j],c[j],tc)
+			evaluator.add(c_new,tc)
+		evaluator.negate(c_new)
+		frac=encoderF.encode(1/(i+1))
+		evaluator.multiply_plain(c_new,frac)
+		c.append(c_new)
+
+	matrixPower_vector=[iden_matrix(n)]+matrixPower_vector
+	c0=Ciphertext()
+	encryptor.encrypt(encoderF.encode(1),c0)
+	c=[c0]+c
+
+	K_inv=[]
+	for i in range(n):
+		k_i=[]
+		for j in range(n):
+			enc_dat=Ciphertext()
+			encryptor.encrypt(encoderF.encode(0), enc_dat)
+			k_i.append(enc_dat)
+		K_inv.append(k_i)
+
+	# Adding the matrices multiplie by their coefficients
+	for i in range(len(matrixPower_vector)-1):
+		for j in range(len(c)):
+			if (i+j == n-1):
+				mult(c[j],matrixPower_vector[i])
+				for t in range(n):
+					for s in range(n):
+						evaluator.add(K_inv[t][s],matrixPower_vector[i][t][s])
+
+	determinant= c[n]
+	# have to multiply K_inv with 
+	return(K_inv,det, determinant)
+
+
 
 parms = EncryptionParameters()
 parms.set_poly_modulus("1x^8192 + 1")
@@ -133,26 +185,32 @@ secret_key = keygen.secret_key()
 encryptor = Encryptor(context, public_key)
 evaluator = Evaluator(context)
 decryptor = Decryptor(context, secret_key)
+
 dir_path=os.path.dirname(os.path.realpath(__file__))
-snp = open(dir_path+"/"+"snpMat.txt","r+")
+
+snp = open(dir_path+"/snpMat.txt","r+")
 S=[]
+S_encrypted=[]
 for row in snp.readlines():
 	S.append(row.strip().split())
 S=S[1:]
-
 S = numpy.array(S).astype(numpy.float)
+S.tolist()
 
-# encrypting matrix S
-for index in range(len(S)):
-	enc_dat=Ciphertext()
-	encryptor.encrypt(encoderF.encode(S[index]), enc_dat, S[index])
-print(S)
+# encrypting S to S_encrypt
+S_encrypted=[]
+for i in range(len(S)):
+	s_enc=[]
+	for j in range(len(S[0])):
+		temp=Ciphertext()
+		encryptor.encrypt(encoderF.encode(S[i][j]), temp)
+		s_enc.append(temp)
+	S_encrypted.append(s_enc)
 
-covariate= open(dir_path+"/"+"covariates.csv")
+covariate= open(dir_path+"/covariates.csv")
 cov=[]
 for row in covariate.readlines():
 	cov.append(row.strip().split(","))
-
 cov = numpy.array(cov).astype(numpy.float)
 cov.tolist()
 
@@ -161,38 +219,47 @@ Tcov=[list(tup) for tup in zip(*cov)]
 y= Tcov[1][1:]
 rawX0= Tcov[2:5]
 
+normalize(rawX0)
+# have to find a way to make normalize an encrytped function
+
 for i in range(len(rawX0)):
 	rawX0[i]=rawX0[i][1:]
 tX=[[1]*245]+ rawX0
 
-for row in tX:
-	for element in row:
+# encrypting matrix tX
+tX_encrypted=[]
+for i in range(len(S)):
+	tx_enc=[]
+	for j in range(len(S[0])):
 		temp=Ciphertext()
-		encryptor.encrypt(encoderF.encode(ran), )
-
-
-
-normalize(rawX0)
+		encryptor.encrypt(encoderF.encode(S[i][j]), temp)
+		tx_enc.append(temp)
+	tX_encrypted.append(tx_enc)
 
 X=[list(tup) for tup in zip(*tX)]
 
 for i in range(len(y)):
-	y[i]=int(y[i])
-
+	temp=Ciphertext()
+	encryptor.encrypt(encoderF.encode(int(y[i])), temp)
+	y[i]=temp
 
 n=len(S) # n=245
 m= len(S[0])# m=10643
 k= len(X[0]) # k =3
 
-y=numpy.asarray(y)
+print("here1")
 
-U1= numpy.matmul(tX,y)
-cross_X= numpy.matmul(tX,X)
+U1= matMultiply(tX_encrypted,y)
+cross_X= matMultiply(tX_encrypted,X)
+
+print("here2")
 
 print("Size to inverse: ", len(cross_X))
-X_Str=numpy.linalg.inv(cross_X)
-U2=numpy.matmul(X_Str, U1)
-#U2.tolist()
+X_Str, determinant_X_str=inverseMatrix(cross_X)
+
+U2=matMultiply(X_Str, U1)
+
+print("here3")
 
 y_str= numpy.subtract(y,numpy.matmul(X,U2))
 #y_str.tolist()
@@ -206,6 +273,7 @@ S_str2=numpy.square(S_str).sum(axis=0)
 
 tY_str=numpy.transpose(y_str)
 b_temp=numpy.matmul(tY_str, S_str)
+
 b=numpy.divide(b_temp, S_str2)
 
 y_str2= numpy.square(y_str)
