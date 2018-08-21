@@ -171,13 +171,16 @@ def inverseMatrix(K):
 def create_CipherMat(M):
 	X=[]
 	nrow=len(M)
+	print("nrow= ",nrow)
 	ncol=len(M[0])
+	print("ncol= ",ncol)
 	for i in range(nrow):
 		x=[]
 		for j in range(ncol):
 			x.append(Ciphertext())
 		X.append(x)
 	return(X)
+
 
 parms = EncryptionParameters()
 parms.set_poly_modulus("1x^8192 + 1")
@@ -207,18 +210,22 @@ S.tolist()
 # encrypting S to S_encrypt
 S_encrypted=create_CipherMat(S)
 
+tS_encrypted=[list(tup) for tup in zip(*S_encrypted)]
+tS=[list(tup) for tup in zip(*S)]
 try:
-	for i in range(len(S)):
+	for i in range(tS):
 		print(i)
-		for j in range(len(S[0])):
-			encryptor.encrypt(encoderF.encode(S[i][j]), S_encrypted[i][j])
-except:
-	print("error found here again")
+		for j in range(len(tS[0])):
+			temp=encoderF.encode(tS[i][j])
+			encryptor.encrypt(temp, tS_encrypted[i][j])
+except Exception as e: 
+	print(e)
 
 covariate= open(dir_path+"/covariates.csv")
 cov=[]
 for row in covariate.readlines():
 	cov.append(row.strip().split(","))
+cov=cov[1:]
 cov = numpy.array(cov).astype(numpy.float)
 cov.tolist()
 
