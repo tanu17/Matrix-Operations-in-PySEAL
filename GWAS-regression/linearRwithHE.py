@@ -223,12 +223,29 @@ except Exception as e:
 	print(e)
 
 covariate= open(dir_path+"/covariates.csv")
+# appending with average in data where NA is there
 cov=[]
 for row in covariate.readlines():
 	cov.append(row.strip().split(","))
 cov=cov[1:]
-cov = numpy.array(cov).astype(numpy.float)
-cov.tolist()
+cov_sum=[[0,0],[0,0],[0,0]]
+for i in range (len(cov)):
+	for j in range(2,5):
+		if cov[i][j]!="NA":
+			cov_sum[j-2][0]+=int(cov[i][j])
+			cov_sum[j-2][1]+=1
+cov_new=[]
+for i in range(len(cov)):
+	cov_new_row=[]
+	for j in range(1,5):
+		if cov[i][j] =="NA":
+			cov_new_row.append(cov_sum[j-2][0]/cov_sum[j-2][1])
+		else:
+			cov_new_row.append(int(cov[i][j]))
+	print(cov_new_row)
+	cov_new.append(cov_new_row)
+cov=cov_new
+
 
 Tcov=[list(tup) for tup in zip(*cov)]
 
