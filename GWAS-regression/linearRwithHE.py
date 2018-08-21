@@ -1,4 +1,3 @@
-# linear regression without HE
 import random
 import math
 import scipy
@@ -169,7 +168,16 @@ def inverseMatrix(K):
 	# have to multiply K_inv with 
 	return(K_inv,det, determinant)
 
-
+def create_CipherMat(M):
+	X=[]
+	nrow=len(M)
+	ncol=len(M[0])
+	for i in range(nrow):
+		x=[]
+		for j in range(ncol):
+			x.append(Ciphertext())
+		X.append(x)
+	return(X)
 
 parms = EncryptionParameters()
 parms.set_poly_modulus("1x^8192 + 1")
@@ -190,7 +198,6 @@ dir_path=os.path.dirname(os.path.realpath(__file__))
 
 snp = open(dir_path+"/snpMat.txt","r+")
 S=[]
-S_encrypted=[]
 for row in snp.readlines():
 	S.append(row.strip().split())
 S=S[1:]
@@ -198,14 +205,15 @@ S = numpy.array(S).astype(numpy.float)
 S.tolist()
 
 # encrypting S to S_encrypt
-S_encrypted=[]
-for i in range(len(S)):
-	s_enc=[]
-	for j in range(len(S[0])):
-		temp=Ciphertext()
-		encryptor.encrypt(encoderF.encode(S[i][j]), temp)
-		s_enc.append(temp)
-	S_encrypted.append(s_enc)
+S_encrypted=create_CipherMat(S)
+
+try:
+	for i in range(len(S)):
+		print(i)
+		for j in range(len(S[0])):
+			encryptor.encrypt(encoderF.encode(S[i][j]), S_encrypted[i][j])
+except:
+	print("error found here again")
 
 covariate= open(dir_path+"/covariates.csv")
 cov=[]
