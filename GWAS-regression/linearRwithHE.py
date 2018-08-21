@@ -1,7 +1,8 @@
 import random
 import math
-import scipy
-from scipy.stats import norm
+import os
+#import scipy
+#from scipy.stats import norm
 import numpy
 import time
 #import threading
