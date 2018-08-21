@@ -180,6 +180,17 @@ def create_CipherMat(M):
 		for j in range(ncol):
 			x.append(Ciphertext())
 		X.append(x)
+	tM=[list(tup) for tup in zip(*M)]
+	tX=[list(tup) for tup in zip(*X)]
+	try:
+		for i in range(ncol):
+			print(i)
+			for j in range(nrow):
+				temp=encoderF.encode(tM[i][j])
+				encryptor.encrypt(temp, tX[i][j])
+	except Exception as e: 
+		print(e)
+	X=[list(tup) for tup in zip(*tX)]
 	return(X)
 
 
@@ -210,17 +221,6 @@ S.tolist()
 
 # encrypting S to S_encrypt
 S_encrypted=create_CipherMat(S)
-
-tS_encrypted=[list(tup) for tup in zip(*S_encrypted)]
-tS=[list(tup) for tup in zip(*S)]
-try:
-	for i in range(tS):
-		print(i)
-		for j in range(len(tS[0])):
-			temp=encoderF.encode(tS[i][j])
-			encryptor.encrypt(temp, tS_encrypted[i][j])
-except Exception as e: 
-	print(e)
 
 covariate= open(dir_path+"/covariates.csv")
 # appending with average in data where NA is there
