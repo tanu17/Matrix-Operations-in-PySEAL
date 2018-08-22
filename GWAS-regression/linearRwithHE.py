@@ -57,8 +57,6 @@ def dot_vector(row,col,empty_ctext):
 		cVec=Ciphertext()
 		evaluator.multiply(row[i], col[i], cVec)
 		evaluator.add(empty_ctext, cVec)
-		#if (count==2):
-		#	evaluator.relinearize(empty_ctext, ev_keys20)
 
 def raise_power(M):
 	return(matMultiply(M,M))
@@ -170,36 +168,17 @@ def inverseMatrix(K):
 	# have to multiply K_inv with 
 	return(K_inv,det, determinant)
 
-def create_CipherMat(M):
+
+def create_Empty_CipherMat(M):
 	print("-"*20 + "inside create_CipherMat(M)" + "-"*20)
 	X=[]
-	nrow=len(M)
-	print("nrow= ",nrow)
-	ncol=len(M[0])
-	print("ncol= ",ncol)
 	for i in range(nrow):
 		x=[]
-		gc.collect()
 		for j in range(ncol):
 			x.append(Ciphertext())
 		X.append(x)
+	gc.collect()
 	print("created empty cipher matrix")
-	tM=[list(tup) for tup in zip(*M)]
-	tX=[list(tup) for tup in zip(*X)]
-	del(X)
-	print("variable X deleted")
-	for i in range(ncol):
-		print(str(i)+" of ",ncol)
-		gc.collect()
-		try:
-			for j in range(nrow):
-				encryptor.encrypt(tM[i][j], tX[i][j])
-		except Exception as e: 
-			print(e)
-			break
-	del(M)
-	print("outside the loop")
-	#X=[list(tup) for tup in zip(*tX)]
 	return(X)
 
 def encode_Matrix(M):
@@ -211,9 +190,25 @@ def encode_Matrix(M):
 		for j in range(col):
 			x.append(encoderF.encode(M[i][j]))
 		X.append(x)
-	del(M)
-	gc.collect()
 	return(X)
+
+def encrypt_matrix_row(list_row, row_number):
+	print(row_number)
+	for j in range(n):
+			try:
+				encryptor.encrypt(list_row[j], tS_encrypted[row_number][j])
+			except Exception as e: 
+				print(e)
+				break
+
+def encrypt_fullMatrix(M):
+	tM= [list(tup) for tup in zip(*M)]
+	del(M)
+	ncol=len(tM)
+	for i in range(ncol):
+		encrypt_matrix_row(tM[i], i)
+	print("outside the loop")
+	return(tM)
 
 parms = EncryptionParameters()
 parms.set_poly_modulus("1x^8192 + 1")
@@ -240,8 +235,14 @@ S=S[1:]
 S = numpy.array(S).astype(numpy.float)
 S.tolist()
 
+n= len(S) # n=245
+m= len(S[0])# m=10643
+
 S_encoded=encode_Matrix(S)
+del(S)
+gc.collect()
 print("matrix has been encoded")
+
 
 covariate= open(dir_path+"/covariates.csv")
 # appending with average in data where NA is there
@@ -265,16 +266,18 @@ for i in range(len(cov)):
 			cov_new_row.append(int(cov[i][j]))
 	cov_new.append(cov_new_row)
 cov=cov_new
+del(cov_new)
+gc.collect()
+Tcov= [list(tup) for tup in zip(*cov)]
+y= Tcov[1][1:]
+rawX0= Tcov[2:5]
 
 
 # encrypting S to S_encrypt
-S_encrypted=create_CipherMat(S_encoded)
-
-
-Tcov=[list(tup) for tup in zip(*cov)]
-
-y= Tcov[1][1:]
-rawX0= Tcov[2:5]
+S_encrypted= create_Empty_CipherMat(S_encoded)
+tS_encrypted=[list(tup) for tup in zip(*S_encrypted)]
+del(S_encrypted)
+encrypt_fullMatrix(S_encoded)
 print("asdk;vknasifnbsdf")
 
 normalize(rawX0)
@@ -286,11 +289,11 @@ tX=[[1]*245]+ rawX0
 
 # encrypting matrix tX
 tX_encrypted=[]
-for i in range(len(S)):
+for i in range(n):
 	tx_enc=[]
-	for j in range(len(S[0])):
+	for j in range(m):
 		temp=Ciphertext()
-		encryptor.encrypt(encoderF.encode(S[i][j]), temp)
+		encryptor.encrypt(encoderF.encode(S_encoded[i][j]), temp)
 		tx_enc.append(temp)
 	tX_encrypted.append(tx_enc)
 
@@ -301,12 +304,10 @@ for i in range(len(y)):
 	encryptor.encrypt(encoderF.encode(int(y[i])), temp)
 	y[i]=temp
 
-n=len(S) # n=245
-m= len(S[0])# m=10643
+
 k= len(X[0]) # k =3
 
 print("here1")
-
 U1= matMultiply(tX_encrypted,y)
 cross_X= matMultiply(tX_encrypted,X)
 
