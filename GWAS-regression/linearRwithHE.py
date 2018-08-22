@@ -7,6 +7,7 @@ import numpy
 import time
 #import threading
 import seal
+import gc
 
 from seal import ChooserEvaluator,     \
                  Ciphertext,           \
@@ -170,6 +171,7 @@ def inverseMatrix(K):
 	return(K_inv,det, determinant)
 
 def create_CipherMat(M):
+	print("-"*20 + "inside create_CipherMat(M)" + "-"*20)
 	X=[]
 	nrow=len(M)
 	print("nrow= ",nrow)
@@ -177,22 +179,41 @@ def create_CipherMat(M):
 	print("ncol= ",ncol)
 	for i in range(nrow):
 		x=[]
+		gc.collect()
 		for j in range(ncol):
 			x.append(Ciphertext())
 		X.append(x)
+	print("created empty cipher matrix")
 	tM=[list(tup) for tup in zip(*M)]
 	tX=[list(tup) for tup in zip(*X)]
-	try:
-		for i in range(ncol):
-			print(i)
+	del(X)
+	print("variable X deleted")
+	for i in range(ncol):
+		print(str(i)+" of ",ncol)
+		gc.collect()
+		try:
 			for j in range(nrow):
-				temp=encoderF.encode(tM[i][j])
-				encryptor.encrypt(temp, tX[i][j])
-	except Exception as e: 
-		print(e)
-	X=[list(tup) for tup in zip(*tX)]
+				encryptor.encrypt(tM[i][j], tX[i][j])
+		except Exception as e: 
+			print(e)
+			break
+	del(M)
+	print("outside the loop")
+	#X=[list(tup) for tup in zip(*tX)]
 	return(X)
 
+def encode_Matrix(M):
+	row=len(M)
+	col=len(M[0])
+	X=[]
+	for i in range(row):
+		x=[]
+		for j in range(col):
+			x.append(encoderF.encode(M[i][j]))
+		X.append(x)
+	del(M)
+	gc.collect()
+	return(X)
 
 parms = EncryptionParameters()
 parms.set_poly_modulus("1x^8192 + 1")
@@ -219,8 +240,8 @@ S=S[1:]
 S = numpy.array(S).astype(numpy.float)
 S.tolist()
 
-# encrypting S to S_encrypt
-S_encrypted=create_CipherMat(S)
+S_encoded=encode_Matrix(S)
+print("matrix has been encoded")
 
 covariate= open(dir_path+"/covariates.csv")
 # appending with average in data where NA is there
@@ -242,15 +263,19 @@ for i in range(len(cov)):
 			cov_new_row.append(cov_sum[j-2][0]/cov_sum[j-2][1])
 		else:
 			cov_new_row.append(int(cov[i][j]))
-	print(cov_new_row)
 	cov_new.append(cov_new_row)
 cov=cov_new
+
+
+# encrypting S to S_encrypt
+S_encrypted=create_CipherMat(S_encoded)
 
 
 Tcov=[list(tup) for tup in zip(*cov)]
 
 y= Tcov[1][1:]
 rawX0= Tcov[2:5]
+print("asdk;vknasifnbsdf")
 
 normalize(rawX0)
 # have to find a way to make normalize an encrytped function
