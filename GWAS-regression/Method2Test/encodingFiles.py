@@ -1,13 +1,14 @@
 import random
 import math
 import os
-#import scipy
-#from scipy.stats import norm
 import numpy
 import time
-#import threading
 import seal
 import gc
+try:
+    import cPickle as pickle
+except ModuleNotFoundError:
+    import pickle
 
 from seal import ChooserEvaluator,     \
                  Ciphertext,           \
@@ -168,21 +169,6 @@ def inverseMatrix(K):
 	# have to multiply K_inv with 
 	return(K_inv,det, determinant)
 
-
-def create_Empty_CipherMat(M):
-	print("-"*20 + "inside create_CipherMat(M)" + "-"*20)
-	X=[]
-	nrow=len(M)
-	ncol=len(M[0])
-	for i in range(nrow):
-		x=[]
-		for j in range(ncol):
-			x.append(Ciphertext())
-		X.append(x)
-	gc.collect()
-	print("created empty cipher matrix")
-	return(X)
-
 def encode_Matrix(M):
 	row=len(M)
 	col=len(M[0])
@@ -194,23 +180,45 @@ def encode_Matrix(M):
 		X.append(x)
 	return(X)
 
-def encrypt_matrix_row(list_row, row_number):
-	print(row_number)
-	for j in range(n):
-			try:
-				encryptor.encrypt(list_row[j], tS_encrypted[row_number][j])
-			except Exception as e: 
-				print(e)
-				break
+def reconstructMatrix():
+	global S_encRECON
+	for i in range(0,m,10):
+		with open(str(self.i)+'.matrix', 'wb') as f:
+			row10=pickle.load(f)
+			S_encRECON.append(row10.X)
+			f.close()
+			gc.collect()
 
-def encrypt_fullMatrix(M):
-	tM= [list(tup) for tup in zip(*M)]
-	del(M)
-	ncol=len(tM)
-	for i in range(ncol):
-		encrypt_matrix_row(tM[i], i)
-	print("outside the loop")
-	return(tM)
+class matrixEncRows:
+    def __init__(self, starting_rowNumber, encodedRows):
+    	self.i= starting_rowNumber
+    	self.S_block= encodedRows
+    	self.nrow=len(encodedRows)
+		self.ncol=len(encodedRows[0])
+		self.X=[]
+		self.encrypt_matrix_row()
+
+    def encrypt_matrix_row(self):
+	    print("-"*20 + "inside create_CipherMat(M)" + "-"*20)
+		for i in range(self.nrow):
+			x=[]
+			for j in range(self.ncol):
+				x.append(Ciphertext())
+			self.X.append(x)
+
+		for rowI in range(self.nrow):
+			for colI in range(self.ncol)
+				try:
+					encryptor.encrypt(self.S_block[rowI][colI], self.X[rowI][colI])
+				except Exception as e: 
+					print(e)
+					break
+
+	def __del__(self):
+		with open(str(self.i)+'.matrix', 'wb') as f:
+			pickle.dump(self,f)
+
+################################################################################
 
 parms = EncryptionParameters()
 parms.set_poly_modulus("1x^8192 + 1")
@@ -226,6 +234,8 @@ secret_key = keygen.secret_key()
 encryptor = Encryptor(context, public_key)
 evaluator = Evaluator(context)
 decryptor = Decryptor(context, secret_key)
+
+################################################################################
 
 dir_path=os.path.dirname(os.path.realpath(__file__))
 
@@ -245,6 +255,25 @@ del(S)
 gc.collect()
 print("matrix has been encoded")
 
+################################################################################
+
+
+tS_encoded=[list(tup) for tup in zip(*S_encoded)]
+del(S_encoded)
+
+
+for i in range(0,len(tS_encoded),10):
+	a= matrixEncRows(i, tS_encoded[i+10])
+	del(a)
+	gc.collect()
+
+S_encRECON=[]
+reconstructMatrix()
+print(S_encRECON[456:478])
+
+################################################################################
+
+"""
 
 covariate= open(dir_path+"/covariates.csv")
 # appending with average in data where NA is there
@@ -273,14 +302,6 @@ gc.collect()
 Tcov= [list(tup) for tup in zip(*cov)]
 y= Tcov[1][1:]
 rawX0= Tcov[2:5]
-
-
-# encrypting S to S_encrypt
-S_encrypted= create_Empty_CipherMat(S_encoded)
-tS_encrypted=[list(tup) for tup in zip(*S_encrypted)]
-del(S_encrypted)
-encrypt_fullMatrix(S_encoded)
-print("asdk;vknasifnbsdf")
 
 normalize(rawX0)
 # have to find a way to make normalize an encrytped function
@@ -352,3 +373,5 @@ logp= -numpy.log10(p)
 logp.tolist()
 
 print(len(logp))
+
+"""
