@@ -182,13 +182,16 @@ def encode_Matrix(M):
 
 def reconstructMatrix():
 	global S_encRECON
-	for i in range(0,m,10):
-		with open(str(self.i)+'.matrix', 'rb') as f:
-			print("opened")
-			row10=pickle.load(f)
-			S_encRECON.append(row10.X)
-			f.close()
-			gc.collect()
+	for i in range(0,15,5):
+		target=str(i)+'.matrix'
+		if os.path.getsize(target)>0:
+			with open(target, 'rb') as f:
+				print("opened")
+				row5=pickle.load(f)
+				S_encRECON+=row5.X
+				f.close()
+		else:
+			print("ummmmmmmmm")
 
 class matrixEncRows:
 	
@@ -211,10 +214,9 @@ class matrixEncRows:
 			for colI in range(self.ncol):
 				encryptor.encrypt(encodedRows[rowI][colI], self.X[rowI][colI])
 
-		gc.collect()
-
 	def __del__(self):
 		with open(str(self.i)+'.matrix', 'wb') as f:
+			print(self.i)
 			pickle.dump(self,f)
 
 ################################################################################
@@ -260,11 +262,12 @@ print("matrix has been encoded")
 tS_encoded=[list(tup) for tup in zip(*S_encoded)]
 del(S_encoded)
 print(len(tS_encoded))
-for i in range(0,len(tS_encoded),10):
+for i in range(0,15,5):
 	print(i)
-	a= matrixEncRows(i, tS_encoded[i:i+10])
-gc.collect()
-
+	a= matrixEncRows(i, tS_encoded[i:i+5])
+#	del(a)
+#gc.collect()
+del(a)
 print("matrix saved, need to be recovered")
 S_encRECON=[]
 reconstructMatrix()
@@ -273,7 +276,7 @@ print(len(S_encRECON))
 ################################################################################
 
 
-"""
+
 covariate= open(dir_path+"/covariates.csv")
 # appending with average in data where NA is there
 cov=[]
@@ -309,6 +312,10 @@ for i in range(len(rawX0)):
 	rawX0[i]=rawX0[i][1:]
 tX=[[1]*245]+ rawX0
 
+print(len(tX))
+print(len(tX[0]))
+
+"""
 # encrypting matrix tX
 tX_encrypted=[]
 for i in range(n):
