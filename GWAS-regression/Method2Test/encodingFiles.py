@@ -312,31 +312,32 @@ for i in range(len(rawX0)):
 	rawX0[i]=rawX0[i][1:]
 tX=[[1]*245]+ rawX0
 
-print(len(tX))
-print(len(tX[0]))
+row_tX=len(tX) #row_tX= 3
+col_tX=len(tX[0]) #col_tX= 245
 
-"""
 # encrypting matrix tX
 tX_encrypted=[]
-for i in range(n):
+for i in range(row_tX):
 	tx_enc=[]
-	for j in range(m):
+	for j in range(col_tX):
 		temp=Ciphertext()
-		encryptor.encrypt(encoderF.encode(S_encoded[i][j]), temp)
+		encryptor.encrypt(encoderF.encode(tX[i][j]), temp)
 		tx_enc.append(temp)
 	tX_encrypted.append(tx_enc)
 
+del(tX)
 X=[list(tup) for tup in zip(*tX)]
 
+#encrypting y
+y_encrypted=[]
 for i in range(len(y)):
 	temp=Ciphertext()
 	encryptor.encrypt(encoderF.encode(int(y[i])), temp)
-	y[i]=temp
+	y_encrypted.append(temp)
+del(y)
 
+k= len(X[0]) # k= 3
 
-k= len(X[0]) # k =3
-
-print("here1")
 U1= matMultiply(tX_encrypted,y)
 cross_X= matMultiply(tX_encrypted,X)
 
@@ -348,7 +349,7 @@ X_Str, determinant_X_str=inverseMatrix(cross_X)
 U2=matMultiply(X_Str, U1)
 
 print("here3")
-
+"""
 y_str= numpy.subtract(y,numpy.matmul(X,U2))
 #y_str.tolist()
 
