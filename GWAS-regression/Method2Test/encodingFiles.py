@@ -183,23 +183,24 @@ def encode_Matrix(M):
 def reconstructMatrix():
 	global S_encRECON
 	for i in range(0,m,10):
-		with open(str(self.i)+'.matrix', 'wb') as f:
+		with open(str(self.i)+'.matrix', 'rb') as f:
+			print("opened")
 			row10=pickle.load(f)
 			S_encRECON.append(row10.X)
 			f.close()
 			gc.collect()
 
 class matrixEncRows:
-    def __init__(self, starting_rowNumber, encodedRows):
-    	self.i= starting_rowNumber
-    	self.S_block= encodedRows
-    	self.nrow=len(encodedRows)
-		self.ncol=len(encodedRows[0])
+	
+	def __init__(self, starting_rowNumber, encodedRows):
+		self.i= starting_rowNumber
+		#self.S_block= encodedRows
+		self.nrow= len(encodedRows)
+		self.ncol= len(encodedRows[0])
 		self.X=[]
-		self.encrypt_matrix_row()
+		self.encrypt_matrix_row(encodedRows)
 
-    def encrypt_matrix_row(self):
-	    print("-"*20 + "inside create_CipherMat(M)" + "-"*20)
+	def encrypt_matrix_row(self,encodedRows):
 		for i in range(self.nrow):
 			x=[]
 			for j in range(self.ncol):
@@ -207,12 +208,10 @@ class matrixEncRows:
 			self.X.append(x)
 
 		for rowI in range(self.nrow):
-			for colI in range(self.ncol)
-				try:
-					encryptor.encrypt(self.S_block[rowI][colI], self.X[rowI][colI])
-				except Exception as e: 
-					print(e)
-					break
+			for colI in range(self.ncol):
+				encryptor.encrypt(encodedRows[rowI][colI], self.X[rowI][colI])
+
+		gc.collect()
 
 	def __del__(self):
 		with open(str(self.i)+'.matrix', 'wb') as f:
@@ -260,21 +259,21 @@ print("matrix has been encoded")
 
 tS_encoded=[list(tup) for tup in zip(*S_encoded)]
 del(S_encoded)
-
-
+print(len(tS_encoded))
 for i in range(0,len(tS_encoded),10):
-	a= matrixEncRows(i, tS_encoded[i+10])
-	del(a)
-	gc.collect()
+	print(i)
+	a= matrixEncRows(i, tS_encoded[i:i+10])
+gc.collect()
 
+print("matrix saved, need to be recovered")
 S_encRECON=[]
 reconstructMatrix()
-print(S_encRECON[456:478])
+print(len(S_encRECON))
 
 ################################################################################
 
-"""
 
+"""
 covariate= open(dir_path+"/covariates.csv")
 # appending with average in data where NA is there
 cov=[]
@@ -373,5 +372,4 @@ logp= -numpy.log10(p)
 logp.tolist()
 
 print(len(logp))
-
 """
