@@ -4,6 +4,7 @@ import os
 import numpy
 import time
 import seal
+import copy
 import gc
 try:
     import cPickle as pickle
@@ -64,10 +65,17 @@ def raise_power(M):
 
 def matMultiply(T,K):
 	X=[]
-	tK=[list(tup) for tup in zip(*K)]
+	rowK=len(K)
+	print(type(K))
+	print(type(K[0]))
+	if (type(K[0]) != list ):
+		tK.copy.deepcopy(K)
+	else:
+		tK=[list(tup) for tup in zip(*K)]
+		del(K)
 	for i in range(len(T)):
 		x=[]
-		for j in range(len(K)):
+		for j in range(rowK):
 			temp=Ciphertext()
 			encryptor.encrypt(encoderF.encode(0), temp)
 			dot_vector(T[i], tK[j], temp)
@@ -191,7 +199,7 @@ def reconstructMatrix():
 				S_encRECON+=row5.X
 				f.close()
 		else:
-			print("ummmmmmmmm")
+			print("[-] Error occured while reconstructing matrix")
 
 class matrixEncRows:
 	
@@ -216,7 +224,6 @@ class matrixEncRows:
 
 	def __del__(self):
 		with open(str(self.i)+'.matrix', 'wb') as f:
-			print(self.i)
 			pickle.dump(self,f)
 
 ################################################################################
@@ -254,16 +261,14 @@ m= len(S[0])# m=10643
 S_encoded=encode_Matrix(S)
 del(S)
 gc.collect()
-print("matrix has been encoded")
+print("[+] matrix has been encoded")
 
 ################################################################################
 
 
 tS_encoded=[list(tup) for tup in zip(*S_encoded)]
 del(S_encoded)
-print(len(tS_encoded))
 for i in range(0,15,5):
-	print(i)
 	a= matrixEncRows(i, tS_encoded[i:i+5])
 #	del(a)
 #gc.collect()
@@ -271,7 +276,6 @@ del(a)
 print("matrix saved, need to be recovered")
 S_encRECON=[]
 reconstructMatrix()
-print(len(S_encRECON))
 
 ################################################################################
 
@@ -285,16 +289,16 @@ for row in covariate.readlines():
 cov=cov[1:]
 cov_sum=[[0,0],[0,0],[0,0]]
 for i in range (len(cov)):
-	for j in range(2,5):
+	for j in range(1,4):
 		if cov[i][j]!="NA":
-			cov_sum[j-2][0]+=int(cov[i][j])
-			cov_sum[j-2][1]+=1
+			cov_sum[j-1][0]+=int(cov[i][j])
+			cov_sum[j-1][1]+=1
 cov_new=[]
 for i in range(len(cov)):
 	cov_new_row=[]
-	for j in range(1,5):
+	for j in range(1,4):
 		if cov[i][j] =="NA":
-			cov_new_row.append(cov_sum[j-2][0]/cov_sum[j-2][1])
+			cov_new_row.append(cov_sum[j-1][0]/cov_sum[j-1][1])
 		else:
 			cov_new_row.append(int(cov[i][j]))
 	cov_new.append(cov_new_row)
@@ -302,15 +306,14 @@ cov=cov_new
 del(cov_new)
 gc.collect()
 Tcov= [list(tup) for tup in zip(*cov)]
-y= Tcov[1][1:]
-rawX0= Tcov[2:5]
+y= Tcov[0]
+rawX0= Tcov[1:4]
 
 normalize(rawX0)
 # have to find a way to make normalize an encrytped function
-
-for i in range(len(rawX0)):
-	rawX0[i]=rawX0[i][1:]
 tX=[[1]*245]+ rawX0
+
+################################################################################
 
 row_tX=len(tX) #row_tX= 3
 col_tX=len(tX[0]) #col_tX= 245
@@ -325,8 +328,10 @@ for i in range(row_tX):
 		tx_enc.append(temp)
 	tX_encrypted.append(tx_enc)
 
+print(len(S_encRECON))
+
 del(tX)
-X=[list(tup) for tup in zip(*tX)]
+X=[list(tup) for tup in zip(*tX_encrypted)]
 
 #encrypting y
 y_encrypted=[]
@@ -338,26 +343,28 @@ del(y)
 
 k= len(X[0]) # k= 3
 
-U1= matMultiply(tX_encrypted,y)
+################################################################################
+
+
+U1= matMultiply(tX_encrypted,y_encrypted)
 cross_X= matMultiply(tX_encrypted,X)
 
 print("here2")
 
 print("Size to inverse: ", len(cross_X))
 X_Str, determinant_X_str=inverseMatrix(cross_X)
-
 U2=matMultiply(X_Str, U1)
-
+del(U1)
 print("here3")
-"""
+
 y_str= numpy.subtract(y,numpy.matmul(X,U2))
 #y_str.tolist()
-
+del(U2)
 U3= numpy.matmul(tX,S)
 U4= numpy.matmul(X_Str, U3)
-
+del(U3)
 S_str=numpy.subtract(S,numpy.matmul(X,U4))
-
+del(U4)
 S_str2=numpy.square(S_str).sum(axis=0)
 
 tY_str=numpy.transpose(y_str)
@@ -380,4 +387,3 @@ logp= -numpy.log10(p)
 logp.tolist()
 
 print(len(logp))
-"""
