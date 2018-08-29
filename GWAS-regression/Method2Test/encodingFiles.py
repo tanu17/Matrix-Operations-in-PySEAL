@@ -4,7 +4,6 @@ import os
 import numpy
 import time
 import seal
-import copy
 import gc
 try:
     import cPickle as pickle
@@ -51,6 +50,7 @@ def trace(M):
 		evaluator.add(t,M[i][i])
 	return (t)
 
+
 def dot_vector(row,col,empty_ctext):
 	l=len(row)
 	for i in range(l):
@@ -66,19 +66,24 @@ def raise_power(M):
 def matMultiply(T,K):
 	X=[]
 	rowK=len(K)
-	print(type(K))
-	print(type(K[0]))
 	if (type(K[0]) != list ):
-		tK.copy.deepcopy(K)
+		tK=K
+		print("Dimension of T: %dx%d\nDimension of K: %dx1"%(len(T),len(T[0]),len(K)))
+		K_vector=1
 	else:
 		tK=[list(tup) for tup in zip(*K)]
-		del(K)
+		print("Dimension of T: %dx%d\nDimension of K: %dx%d"%(len(T),len(T[0]),len(K),len(K[0])))
+		K_vector=0
+	del(K)
 	for i in range(len(T)):
 		x=[]
 		for j in range(rowK):
 			temp=Ciphertext()
 			encryptor.encrypt(encoderF.encode(0), temp)
-			dot_vector(T[i], tK[j], temp)
+			if (K_vector):
+				dot_vector(T[i], tK, temp)
+			else:	
+				dot_vector(T[i], tK[j], temp)
 			x.append(temp)
 		X.append(x)
 	return(X)
@@ -190,13 +195,13 @@ def encode_Matrix(M):
 
 def reconstructMatrix():
 	global S_encRECON
-	for i in range(0,15,5):
+	for i in range(0,8,4):
 		target=str(i)+'.matrix'
 		if os.path.getsize(target)>0:
 			with open(target, 'rb') as f:
 				print("opened")
-				row5=pickle.load(f)
-				S_encRECON+=row5.X
+				row4=pickle.load(f)
+				S_encRECON+=row4.X
 				f.close()
 		else:
 			print("[-] Error occured while reconstructing matrix")
@@ -268,8 +273,8 @@ print("[+] matrix has been encoded")
 
 tS_encoded=[list(tup) for tup in zip(*S_encoded)]
 del(S_encoded)
-for i in range(0,15,5):
-	a= matrixEncRows(i, tS_encoded[i:i+5])
+for i in range(0,8,4):
+	a= matrixEncRows(i, tS_encoded[i:i+4])
 #	del(a)
 #gc.collect()
 del(a)
@@ -328,8 +333,6 @@ for i in range(row_tX):
 		tx_enc.append(temp)
 	tX_encrypted.append(tx_enc)
 
-print(len(S_encRECON))
-
 del(tX)
 X=[list(tup) for tup in zip(*tX_encrypted)]
 
@@ -345,11 +348,12 @@ k= len(X[0]) # k= 3
 
 ################################################################################
 
-
+print("[+] Proceding to homomorphic functions")
 U1= matMultiply(tX_encrypted,y_encrypted)
+print("done with U1")
 cross_X= matMultiply(tX_encrypted,X)
 
-print("here2")
+print("done with cross_X")
 
 print("Size to inverse: ", len(cross_X))
 X_Str, determinant_X_str=inverseMatrix(cross_X)
