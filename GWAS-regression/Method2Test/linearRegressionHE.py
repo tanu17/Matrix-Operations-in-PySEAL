@@ -29,8 +29,8 @@ from seal import ChooserEvaluator,     \
                  ChooserEvaluator,     \
                  ChooserPoly
 
-
 ############################ matrixEncryptRows ####################################
+
 
 class matrixEncryptRows:
 	
@@ -280,13 +280,13 @@ def encode_Matrix(M):
 
 def reconstructMatrix():
 	global S_encRECON
-	for i in range(0,8,4):
+	for i in range(0,m,10):
 		target=str(i)+'.matrix'
 		if os.path.getsize(target)>0:
 			with open(target, 'rb') as f:
 				print("opened")
-				row4=pickle.load(f)
-				S_encRECON+=row4.X
+				row10=pickle.load(f)
+				S_encRECON+=row10.X
 				f.close()
 		else:
 			print("[-] Error occured while reconstructing matrix")
@@ -348,8 +348,8 @@ print("[+] matrix has been encoded")
 
 tS_encoded=[list(tup) for tup in zip(*S_encoded)]
 del(S_encoded)
-for i in range(0,8,4):
-	a= matrixEncryptRows(i, tS_encoded[i:i+4])
+for i in range(0,m,10):
+	a= matrixEncryptRows(i, tS_encoded[i:i+10])
 #	del(a)
 #gc.collect()
 del(a)
@@ -487,7 +487,7 @@ S_star2=matrixOperations.colSquare_Sum(S_star)
 
 
 ########################## linear regression Pt. 2 ##############################
-####### after returning some matrix to user for decryting and evaluating ########
+######## after returning some matrix to decrypt and to evaluate by user #########
 
 
 b_temp_dec= decrypt_matrix(b_temp)
