@@ -29,8 +29,8 @@ from seal import ChooserEvaluator,     \
                  ChooserEvaluator,     \
                  ChooserPoly
 
-############################ matrixEncryptRows ####################################
 
+############################ matrixEncryptRows ####################################
 
 class matrixEncryptRows:
 	
@@ -77,23 +77,33 @@ class matrixOperations:
 	# ultipliess two matrix and returns a new matrix as result
 		X=[]
 		rowK=len(K)
+		K_vector=0
+		T_vector=0
 		if (type(K[0]) != list ):
 			tK=K
 			print("Dimension of T: %dx%d\nDimension of K: %dx1"%(len(T),len(T[0]),len(K)))
 			K_vector=1
+
+		elif (type(T[0]) != list ):
+			tK=[list(tup) for tup in zip(*K)]
+			print("Dimension of T: %dx1\nDimension of K: %dx%d"%(len(T),len(K),len(K[0])))
+			T_vector=1
+
 		else:
 			tK=[list(tup) for tup in zip(*K)]
 			print("Dimension of T: %dx%d\nDimension of K: %dx%d"%(len(T),len(T[0]),len(K),len(K[0])))
-			K_vector=0
+
 		del(K)
 		for i in range(len(T)):
 			x=[]
 			for j in range(rowK):
 				temp=Ciphertext()
 				encryptor.encrypt(encoderF.encode(0), temp)
-				if (K_vector):
+				if (K_vector==1):
 					matrixOperations.dot_vector(T[i], tK, temp)
-				else:	
+				elif(T_vector==1):
+					matrixOperations.dot_vector(T, tK[j], temp)
+				else:
 					matrixOperations.dot_vector(T[i], tK[j], temp)
 				x.append(temp)
 			X.append(x)
@@ -130,6 +140,27 @@ class matrixOperations:
 			X.append(x)
 		return(X)
 
+	@staticmethod
+	def subtractMatrix(T,K):
+		for i in range(len(T)):
+			for j in range(len(T[0])):
+				evaluator.sub(T[i][j], K[i][j])
+
+	@staticmethod
+	def colSquare_Sum(M):
+		tM = [list(tup) for tup in zip(*M)]
+		del(M)
+		X=[] 
+		rowM=len(tM)
+		for i in range(rowM):
+			x=Ciphertext()
+			encryptor.encrypt(encoderF.encode(0),x)
+			for element in (tM[i]):
+				y=Ciphertext()
+				evaluator.square(element,y)
+				evaluator.add(y,x)
+			X.append(x)
+		return(X)
 
 	@staticmethod
 	def inverseMatrix(K):
@@ -182,6 +213,18 @@ class matrixOperations:
 		# have to multiply K_inv with 
 		return(K_inv, determinant)
 
+	@staticmethod
+	def multiplyDeterminant(M, determinant):
+		p=Plaintext()
+		# need to send user D so that user can send back -1/D either in encrypted form or decrypted form
+		decryptor.decrypt(determinant, p)
+		d= (-1/encoderF.decode(p))
+		delta=encoderF.encode(d)
+		for i in range(len(M)):
+			for j in range(len(M[0])):
+				evaluator.multiply_plain(M[i][j], delta)
+
+
 ########################## rest of functions neeeded ###########################
 
 
@@ -223,6 +266,7 @@ def normalize(M):
 			row[i]= (row[i] - minR) / avg
 	return(M)
 
+
 def encode_Matrix(M):
 	row=len(M)
 	col=len(M[0])
@@ -246,6 +290,21 @@ def reconstructMatrix():
 				f.close()
 		else:
 			print("[-] Error occured while reconstructing matrix")
+
+def decrypt_matrix(M):
+	M_dec=[]
+	for x in M:
+		m=[]
+		for y in x:
+			p=Plaintext()
+			decryptor.decrypt(y, p)
+			m.append(encoderF.decode(p))
+		M.append(m)
+	return(M)
+
+
+
+
 
 ########################## paramaters required #################################
 
@@ -364,47 +423,88 @@ del(y)
 
 k= len(X[0]) # k= 3
 
-########################## linear regression ##################################
+
+
+########################## linear regression Pt. 1 ##############################
 
 print("\n[+] Proceding to homomorphic functions")
 
+# dimension of X ->  n (number of individuals) rows and 1+k (1+ number of covariates) cols
+# dimension of y -> vector of length n (number of individuals)
+# dimension of S ->  n (number of individuals) rows and m (number of SNPs)
+
 U1= matMultiply(tX_encrypted,y_encrypted)
-print("done with U1")
+print("calculated U1")
+# dimension of U1 ->  vector of length k+1 (1+ number of covariates)
+
 cross_X= matMultiply(tX_encrypted,X)
-print("done with cross_X")
+print("calculated cross_X")
+# dimension of cross_X ->  1+k rows and 1+k cols
 
 print("Size to inverse: ", len(cross_X))
-X_Star, determinant_X_star=inverseMatrix(cross_X)
-U2=matMultiply(X_Star, U1)
+X_Star, determinant_X_star= inverseMatrix(cross_X)
+# ^^^^ need to return determinant to user so that user can decrypt and return -1/D
+matrixOperations.multiplyDeterminant(X_Star, determinant_X_star)
+
+U2=matMultiply(X_Star, U1) 
 del(U1)
-print("here3")
+print("calculated U2")
+# dimension of U2 ->  vector of length k+1 (1+ number of covariates)
 
 intermediateYStar=matrixOperations.matMultiply(X, U2)
-y_star= numpy.subtract(y,intermediateYStar)
-#y_str.tolist()
+# dimension of intermediateYStar ->  vector of length n (number of individuals)
+# not returning new matrix after subtraction as the original matrix has to be deleted
+y_star= matrixOperations.subtractMatrix(y,intermediateYStar)
 del(U2)
+del(intermediateYStar)
+# dimension of y_star -> vector of length n (number of individuals)
 
-U3= matrixOperations.matMultiply(tX,S)
+U3= matrixOperations.matMultiply(tX_encrypted,S)
+# dimension of U3 -> 1+k rows and m (number of SNPs)
 U4= matrixOperations.matMultiply(X_Star, U3)
 del(U3)
+# dimension of U4 -> 1+k rows and m (number of SNPs)
 
-######  *********** have to code this part for following HE ************** #############
-"""
 
-S_star=numpy.subtract(S,numpy.matmul(X,U4))
+S_star_temp=matrixOperations.matMultiply(X,U4)
 del(U4)
-S_star2=numpy.square(S_star).sum(axis=0)
+S_star=matrixOperations.subtractMatrix(S,S_star_temp)
+del(S_star_temp)
+# dimension of S_star -> n (number of individuals) rows and m (number of SNPs)
 
 tY_star= [list(tup) for tup in zip(*y_star)]
 b_temp= matrixOperations.matMultiply(tY_star, S_star)
+# dimension of b_temp -> vector of length m (number of SNPs)
+del(tY_star)
 
-b=numpy.divide(b_temp, S_str2)
+for elementY in y_star:
+	evaluator.square(elementY)
+y_star2=y_star
+del(y_star)
 
-y_str2= numpy.square(y_str)
+S_star2=matrixOperations.colSquare_Sum(S_star)
+# dimension of S_star2 -> vector of length m (number of SNPs)
+
+
+########################## linear regression Pt. 2 ##############################
+####### after returning some matrix to user for decryting and evaluating ########
+
+
+b_temp_dec= decrypt_matrix(b_temp)
+S_star2_dec= decrypt_matrix(S_star2)
+y_star2_dec= decrypt_matrix(y_star2)
+
+del(b_temp)
+del(S_star2)
+del(y_star2)
+
+b=numpy.divide(b_temp, S_star2)
+# dimension of b -> vector of length m (number of SNPs)
+
 b2= numpy.square(b)
-sig = numpy.subtract(numpy.sum(y_str2),numpy.multiply(b2,S_str2)) / (n-k-2)
+sig = numpy.subtract(numpy.sum(y_star2_dec),numpy.multiply(b2,S_star2_dec)) / (n-k-2)
 
-err= numpy.sqrt(sig*(1/S_str2))
+err= numpy.sqrt(sig*(1/S_star2_dec))
 
 f=numpy.divide(b,err)
 f=-abs(f)
@@ -415,4 +515,3 @@ logp= -numpy.log10(p)
 logp.tolist()
 
 print(len(logp))
-"""
