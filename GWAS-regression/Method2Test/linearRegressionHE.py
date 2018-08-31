@@ -74,7 +74,7 @@ class matrixOperations:
 
 	@staticmethod
 	def matMultiply(T,K):
-	# ultipliess two matrix and returns a new matrix as result
+	# multipliess two matrix and returns a new matrix as result
 		X=[]
 		rowK=len(K)
 		K_vector=0
@@ -92,7 +92,6 @@ class matrixOperations:
 		else:
 			tK=[list(tup) for tup in zip(*K)]
 			print("Dimension of T: %dx%d\nDimension of K: %dx%d"%(len(T),len(T[0]),len(K),len(K[0])))
-
 		del(K)
 		for i in range(len(T)):
 			x=[]
@@ -280,13 +279,13 @@ def encode_Matrix(M):
 
 def reconstructMatrix():
 	global S_encRECON
-	for i in range(0,m,10):
+	for i in range(0,4,2):
 		target=str(i)+'.matrix'
 		if os.path.getsize(target)>0:
 			with open(target, 'rb') as f:
 				print("opened")
-				row10=pickle.load(f)
-				S_encRECON+=row10.X
+				row2=pickle.load(f)
+				S_encRECON+=row2.X
 				f.close()
 		else:
 			print("[-] Error occured while reconstructing matrix")
@@ -348,8 +347,8 @@ print("[+] matrix has been encoded")
 
 tS_encoded=[list(tup) for tup in zip(*S_encoded)]
 del(S_encoded)
-for i in range(0,m,10):
-	a= matrixEncryptRows(i, tS_encoded[i:i+10])
+for i in range(0,4,2):
+	a= matrixEncryptRows(i, tS_encoded[i:i+2])
 #	del(a)
 #gc.collect()
 del(a)
@@ -436,6 +435,8 @@ print("\n[+] Proceding to homomorphic functions")
 U1= matMultiply(tX_encrypted,y_encrypted)
 print("calculated U1")
 # dimension of U1 ->  vector of length k+1 (1+ number of covariates)
+print("tX: "+str(len(tX_encrypted))+ "x"+str(tX_encrypted[0]))
+print("X: "+str(len(X))+ "x"+str(X[0]))
 
 cross_X= matMultiply(tX_encrypted,X)
 print("calculated cross_X")
