@@ -73,14 +73,14 @@ class matrixOperations:
 
         else:
             tK=[list(tup) for tup in zip(*K)]
-            print("Dimension of T: %dx%d\nDimension of K: %dx%d"%(len(T),len(T[0]),len(K),len(K[0])))
+            #print("Dimension of T: %dx%d\nDimension of K: %dx%d"%(len(T),len(T[0]),len(K),len(K[0])))
 
             for i in range(len(T)):
                 row_X=[]
                 for j in range(len(tK)):
                     temp= Ciphertext()
                     encryptor.encrypt(encoderF.encode(0), temp)
-                    dot_vector(M[i], tA[j],temp)
+                    matrixOperations.dot_vector(T[i], tK[j],temp)
                     row_X.append(temp)
                 X.append( row_X )
 
@@ -97,7 +97,6 @@ class matrixOperations:
     @staticmethod
     def trace(M):
     # calculates trace of a matrix 
-        print(M)
         t=Ciphertext(M[0][0])
         for i in range(1,len(M)):
             evaluator.add(t,M[i][i])
@@ -148,9 +147,9 @@ class matrixOperations:
         trace_vector=[matrixOperations.trace(K)]
 
         for i in range(1,n):
-            print(len(matrixPower_vector))
-            matrixPower_vector+=matrixOperations.matMultiply(K, matrixPower_vector[i-1])
-            trace_vector+=(matrixOperations.trace(matrixPower_vector[i]))
+            S=matrixOperations.matMultiply(K, matrixPower_vector[i-1])
+            matrixPower_vector+=[S]
+            trace_vector+=[matrixOperations.trace(matrixPower_vector[i])]
 
         c=[Ciphertext(trace_vector[0])]
         evaluator.negate(c[0])
@@ -211,7 +210,8 @@ def print_plain(D):
         for values in row:
             p=Plaintext()
             decryptor.decrypt(values, p)
-            print(encoderF.decode(p))
+            print(encoderF.decode(p),end=" ")
+        print()
 
 def print_value(s):
     # print value of an encoded ciphertext
@@ -227,8 +227,7 @@ def normalize(M):
             M[i][j]= (M[i][j] - minR) / float(maxR-minR)
     return(M)
 
-def encode_Matrix(row):
-    global 
+def encode_Matrix(row): 
     x=[]
     for element in row:
         x.append(encoderF.encode(element))
@@ -284,6 +283,7 @@ for i in range(n):
     plain_A.append(plain_a)
     print(plain_a)
 
-delta, C = matrixOperations.inverseMatrix(A)
+C, delta = matrixOperations.inverseMatrix(A)
 
-print(delta)
+matrixOperations.multiplyDeterminant(C,delta)
+print_plain(C)
