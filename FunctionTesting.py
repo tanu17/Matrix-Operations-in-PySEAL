@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from functools import partial
-#import random
+import random
 import math
 import os
 import numpy
@@ -144,11 +144,11 @@ class matrixOperations:
         for i in range(rowM):
             x=Ciphertext()
             encryptor.encrypt(encoderF.encode(0),x)
-            for element in (tM[i]):
+            for j in range(len(tM[i])):
                 y=Ciphertext()
-                evaluator.square(element,y)
+                evaluator.square(tM[i][j])
 #~~~~~~~~~~~~~ can have need to relinearize or changing parameter ~~~~~~~~~~
-                evaluator.add(x,y)
+                evaluator.add(x,tM[i][j])
             del(y)
             X.append(x)
         return(X)
@@ -241,8 +241,9 @@ def print_plain(D):
     if ( type(D[0]) != list ):
         for element in D:
             p=Plaintext()
-            decryptor.decrypt(values, p)
+            decryptor.decrypt(element, p)
             print(encoderF.decode(p), end=" ")
+        print()
 
     else:
         for row in D:
@@ -320,27 +321,15 @@ if __name__ == '__main__':
     evaluator = Evaluator(context)
     decryptor = Decryptor(context, secret_key)
 
-    num_cores = multiprocessing.cpu_count() - 2
+    num_cores = multiprocessing.cpu_count() - 1
+
+    print(num_cores)
 
 
     ########################## encoding main matrix ################################
 
 
     dir_path=os.path.dirname(os.path.realpath(__file__))
-
-    snp = open(dir_path+"/snpMat.txt","r+")
-    S=[]
-    for row in snp.readlines():
-        S.append(row.strip().split())
-    S=S[1:]
-    S = numpy.array(S).astype(numpy.float)
-    S.tolist()
-
-    n= len(S) # n=245
-    m= len(S[0])# m=10643
-
-    gc.collect()
-
 
     #################### covariate matrix and derivatives ##########################
 
@@ -374,30 +363,19 @@ if __name__ == '__main__':
     del(cov_new)
     gc.collect()
     y= Tcov[0]
-    rawX0= Tcov[1:4]
 
-    rawX0=normalize(rawX0)
-    # have to find a way to make normalize an encrytped function
-
-    tX=[[1]*245]+ rawX0
-    del(rawX0)
 
     ###################### encrypting tX and y #####################################
     print("[+] Starting enrypting matrices")
-    row_tX=len(tX) #row_tX= 3
-    col_tX=len(tX[0]) #col_tX= 245
+    X=[]
+    for i in range(4):
+        x=[]
+        for j in range(4):
+            x.append(random.randint(0,10))
+        print(x)
+        X.append(x)
 
-    # encrypting matrix tX
-
-    tX_encrypted= encrypting_Matrix(tX)
-    try:
-        del(tX)
-    except:
-        pass
-    gc.collect()
-
-    #X=[list(tup) for tup in zip(*tX_encrypted)]
-
+    X= encrypting_Matrix(X)
     #encrypting y
     y_encrypted= encrypting_Matrix(y)
     try:
@@ -407,24 +385,7 @@ if __name__ == '__main__':
 
     gc.collect()
 
-    print("[+] Encrypted tX and y")
-
-    ########################### encrypting S #######################################
-
-    tS=[list(tup) for tup in zip(*S)]
-    S_encRECON=[]
-    S_enc=[]
-
-    del(S)
-
-    for i in range(0,4,2):
-        #a= matrixEncryptRows(tS[i:i+2])
-        #del(a)
-        S_enc+=encrypting_Matrix(tS[i:i+2])
-    #del(a)
-    print("[+] Matrix S encrytped")
-    print(len(S_enc))
-    print(len(S_enc[0]))
+    print("[+] Encrypted X and y")
 
 
     ########################## linear regression Pt. 1 ##############################
@@ -439,11 +400,6 @@ if __name__ == '__main__':
     #restricting to 10 for calculation  purposes
        #########
     y_encrypted=y_encrypted[:10]
-    for j in range(len(tX_encrypted)):
-        tX_encrypted[j]=tX_encrypted[j][:10]
-        #########
-
-    X=[list(tup) for tup in zip(*tX_encrypted)]
     k= len(X[0]) # k= 3
 
     print("Y : ")
@@ -454,8 +410,9 @@ if __name__ == '__main__':
     y_star2=y_encrypted
     del(y_encrypted)
 
-    print("Y squared: ")
-    print_plain(y_encrypted)
+    print("\nY squared: ")
+    print_plain(y_star2)
+
 
 
     print("\nrandom X : ")
@@ -464,5 +421,7 @@ if __name__ == '__main__':
     # dimension of S_star2 -> vector of length m (number of SNPs)
 
     print("\nCol Squared X : ")
+    print_plain(X)
     print_plain(X_star)
     print("[=] Finished with homomorphic functions")
+    
