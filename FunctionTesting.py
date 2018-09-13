@@ -238,12 +238,19 @@ class matrixOperations:
 
 def print_plain(D):
     # function to print out all elements in a matrix
-    for row in D:
-        for values in row:
+    if ( type(D[0]) != list ):
+        for element in D:
             p=Plaintext()
             decryptor.decrypt(values, p)
             print(encoderF.decode(p), end=" ")
-        print()
+
+    else:
+        for row in D:
+            for values in row:
+                p=Plaintext()
+                decryptor.decrypt(values, p)
+                print(encoderF.decode(p), end=" ")
+            print()
 
 def print_value(s):
     # print value of an encoded ciphertext
